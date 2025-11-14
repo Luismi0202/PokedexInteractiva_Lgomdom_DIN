@@ -1,3 +1,4 @@
+// kotlin
 package com.example.pokedexinteractiva
 
 import android.media.MediaPlayer
@@ -106,23 +107,28 @@ fun PokedexScreen() {
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
-                OutlinedTextField(
-                    value = vistaSeleccionada,
-                    onValueChange = { },
-                    readOnly = true,
-                    label = { Text("Selección de vistas") },
-                    trailingIcon = {
-                        IconButton(onClick = { abierto = !abierto }) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { abierto = !abierto }
+                ) {
+                    OutlinedTextField(
+                        value = vistaSeleccionada,
+                        onValueChange = { },
+                        readOnly = true,
+                        enabled = false,
+                        label = { Text("Selección de vistas", color = Color.Black) },
+                        trailingIcon = {
                             Icon(
                                 imageVector = if (abierto) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
                                 contentDescription = if (abierto) "Cerrar menú de vistas" else "Abrir menú de vistas"
                             )
-                        }
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { abierto = !abierto }
-                )
+                        },
+                        textStyle = androidx.compose.ui.text.TextStyle(color = Color.Black),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
                 IconButton(onClick = { abrirFiltro = true }) {
                     Icon(
                         imageVector = Icons.Filled.FilterList,
