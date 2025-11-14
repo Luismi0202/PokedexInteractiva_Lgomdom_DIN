@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -33,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.pokedexinteractiva.ui.theme.PokedexInteractivaTheme
 
@@ -93,9 +96,50 @@ fun PokedexPantalla(modifier:Modifier = Modifier){
         }
         when (vistaSeleccionada) {
             "Lista vertical" -> listaVerticalPokemones(pokemones, modifier = Modifier.weight(1f))
+            "Vista en cuadrícula" -> listaVistaCuadricula(pokemones, modifier = Modifier.weight(1f))
         }
     }
 }
+
+
+@Composable
+fun listaVistaCuadricula(pokemones: List<PokemonUi>, modifier: Modifier = Modifier) {
+    LazyVerticalGrid(
+        modifier = modifier.fillMaxWidth(),
+        columns = GridCells.Fixed(4),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(pokemones.size) { index ->
+            val pokemon = pokemones[index]
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.LightGray),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(4.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = pokemon.nombre,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    AsyncImage(
+                        model = pokemon.imagenUrl,
+                        contentDescription = pokemon.nombre,
+                        modifier = Modifier.size(80.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
 
 @Composable
 fun listaVerticalPokemones(pokemones: List<PokemonUi>, modifier: Modifier = Modifier) {

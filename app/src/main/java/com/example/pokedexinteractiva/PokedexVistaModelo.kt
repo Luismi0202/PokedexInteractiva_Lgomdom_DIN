@@ -69,7 +69,7 @@ class PokedexVistaModelo : ViewModel() {
     private fun cargarPokemones() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val listaJson = URL("https://pokeapi.co/api/v2/pokemon?limit=151").readText()
+                val listaJson = URL("https://pokeapi.co/api/v2/pokemon?limit=-1").readText()
                 val resultados = JSONObject(listaJson).getJSONArray("results")
                 for (i in 0 until resultados.length()) {
                     val r = resultados.getJSONObject(i)
