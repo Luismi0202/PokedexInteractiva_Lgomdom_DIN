@@ -1,13 +1,19 @@
-package com.example.pokedexinteractiva.ui
+package com.example.pokedexinteractiva
 
 import android.media.MediaPlayer
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -25,6 +31,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -38,6 +45,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -50,8 +58,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.example.pokedexinteractiva.PokedexVistaModelo
-import com.example.pokedexinteractiva.PokemonUi
 
 @Composable
 fun PokedexScreen() {
@@ -109,7 +115,7 @@ fun PokedexScreen() {
                         IconButton(onClick = { abierto = !abierto }) {
                             Icon(
                                 imageVector = if (abierto) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
-                                contentDescription = "Selector de vistas"
+                                contentDescription = if (abierto) "Cerrar menú de vistas" else "Abrir menú de vistas"
                             )
                         }
                     },
@@ -146,11 +152,11 @@ fun PokedexScreen() {
                 OutlinedTextField(
                     value = busqueda,
                     onValueChange = { busqueda = it },
-                    label = { Text("Buscar Pokémon") },
+                    label = { Text("Buscar Pokémon por nombre") },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Filled.Search,
-                            contentDescription = "Buscar"
+                            contentDescription = "Icono de búsqueda"
                         )
                     },
                     trailingIcon = {
@@ -220,46 +226,22 @@ fun ListaVerticalPokemones(
 ) {
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(8.dp)
     ) {
         items(
             items = pokemones,
             key = { it.nombre }
         ) { pokemon ->
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color.LightGray),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp)
-                    .clickable { onPokemonClick(pokemon) }
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    AsyncImage(
-                        model = pokemon.imagenUrl,
-                        contentDescription = pokemon.nombre,
-                        modifier = Modifier.size(120.dp)
-                    )
-                    Text(
-                        text = pokemon.nombre,
-                        fontSize = 18.sp,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                    Text(
-                        text = pokemon.tipos.joinToString(", "),
-                        fontSize = 14.sp,
-                        color = Color.Gray
-                    )
-                }
-            }
+            PokemonCard(
+                pokemon = pokemon,
+                onClick = onPokemonClick,
+                imageSize = 120,
+                textSize = 18
+            )
         }
     }
 }
-
 
 @Composable
 fun ListaVistaCuadricula(
@@ -269,32 +251,22 @@ fun ListaVistaCuadricula(
 ) {
     LazyVerticalGrid(
         modifier = modifier.fillMaxWidth(),
-        columns = GridCells.Fixed(4),
+        columns = GridCells.Fixed(3),
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(8.dp)
     ) {
         items(
             items = pokemones,
             key = { it.nombre }
         ) { pokemon ->
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color.LightGray),
-                modifier = Modifier
-                    .clickable { onPokemonClick(pokemon) }
-                    .padding(4.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(4.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    AsyncImage(
-                        model = pokemon.imagenUrl,
-                        contentDescription = pokemon.nombre,
-                        modifier = Modifier.size(80.dp)
-                    )
-                    Text(text = pokemon.nombre, fontSize = 12.sp)
-                }
-            }
+            PokemonCard(
+                pokemon = pokemon,
+                onClick = onPokemonClick,
+                imageSize = 80,
+                textSize = 12,
+                modifier = Modifier.aspectRatio(1f)
+            )
         }
     }
 }
@@ -329,13 +301,27 @@ fun ListaAgrupadaPorTipos(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Cargando pokémones...")
+            CircularProgressIndicator()
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Cargando pokémones...", fontSize = 16.sp)
+        }
+    } else if (pokemonesPorTipo.isEmpty()) {
+        Column(
+            modifier = modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "No se encontraron pokémones con ese nombre",
+                fontSize = 18.sp,
+                color = Color.Gray
+            )
         }
     } else {
         LazyColumn(
             state = listState,
             modifier = modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             pokemonesPorTipo.forEach { (tipo, pokemonesDelTipo) ->
                 stickyHeader(key = "header-$tipo") {
@@ -345,13 +331,13 @@ fun ListaAgrupadaPorTipos(
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 8.dp)
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text = tipo,
-                            fontSize = 20.sp,
+                            text = tipo.uppercase(),
                             color = Color.White,
-                            modifier = Modifier.padding(8.dp)
+                            fontSize = 20.sp,
+                            modifier = Modifier.padding(12.dp)
                         )
                     }
                 }
@@ -360,29 +346,13 @@ fun ListaAgrupadaPorTipos(
                     items = pokemonesDelTipo,
                     key = { "${tipo}-${it.nombre}" }
                 ) { pokemon ->
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = Color.LightGray),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onPokemonClick(pokemon) }
-                            .padding(horizontal = 8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            AsyncImage(
-                                model = pokemon.imagenUrl,
-                                contentDescription = pokemon.nombre,
-                                modifier = Modifier.size(60.dp)
-                            )
-                            Text(
-                                text = pokemon.nombre,
-                                fontSize = 16.sp,
-                                modifier = Modifier.padding(start = 8.dp)
-                            )
-                        }
-                    }
+                    PokemonCard(
+                        pokemon = pokemon,
+                        onClick = onPokemonClick,
+                        imageSize = 100,
+                        textSize = 14,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
                 }
             }
         }
@@ -396,7 +366,7 @@ fun FiltroGenDialog(
     onDismiss: () -> Unit,
     onApply: (Int) -> Unit
 ) {
-    var seleccionado by remember { mutableStateOf(indiceInicial) }
+    var seleccionado by remember { mutableIntStateOf(indiceInicial) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Filtrar por generación") },
@@ -408,12 +378,16 @@ fun FiltroGenDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { seleccionado = index }
+                            .padding(vertical = 8.dp)
                     ) {
                         RadioButton(
                             selected = seleccionado == index,
                             onClick = { seleccionado = index }
                         )
-                        Text(text = titulo, modifier = Modifier.padding(start = 8.dp))
+                        Text(
+                            text = titulo,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
                     }
                 }
             }
@@ -446,20 +420,33 @@ fun PokemonDialog(pokemon: PokemonUi, onDismiss: () -> Unit) {
         title = { Text(text = pokemon.nombre) },
         text = {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                AsyncImage(
-                    model = pokemon.imagenUrl,
-                    contentDescription = pokemon.nombre,
-                    modifier = Modifier.size(180.dp)
-                )
+                if (pokemon.imagenUrl != null) {
+                    AsyncImage(
+                        model = pokemon.imagenUrl,
+                        contentDescription = "Imagen ampliada del Pokémon ${pokemon.nombre}",
+                        modifier = Modifier.size(200.dp)
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(200.dp)
+                            .background(Color(0xFFE0E0E0)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("?", fontSize = 64.sp, color = Color.Gray)
+                    }
+                }
                 Text(
                     text = "Tipo: ${pokemon.tipos.joinToString(", ")}",
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier.padding(top = 12.dp),
+                    fontSize = 16.sp
                 )
                 val detalle = pokemon.descripcion
                     ?: "Habilidades: ${pokemon.habilidades.joinToString(", ")}"
                 Text(
                     text = detalle,
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier.padding(top = 8.dp),
+                    fontSize = 14.sp
                 )
             }
         },
