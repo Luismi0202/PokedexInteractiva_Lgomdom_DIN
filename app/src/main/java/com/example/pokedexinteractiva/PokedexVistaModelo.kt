@@ -1,3 +1,4 @@
+// app/src/main/java/com/example/pokedexinteractiva/PokedexVistaModelo.kt
 package com.example.pokedexinteractiva
 
 import androidx.compose.runtime.getValue
@@ -8,6 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -18,7 +20,23 @@ class PokedexVistaModelo : ViewModel() {
     var cargando by mutableStateOf(true)
         private set
 
+    // Límite actual de la API (-1 = todas)
+    var limite by mutableStateOf(-1)
+        private set
+
+    private var cargaJob: Job? = null
+
     init {
+        cargarPokemones()
+    }
+
+    // Cambia el límite según la generación seleccionada y recarga
+    fun aplicarFiltroGen(nuevoLimite: Int) {
+        if (nuevoLimite == limite) return
+        cargaJob?.cancel()
+        limite = nuevoLimite
+        pokemones.clear()
+        cargando = true
         cargarPokemones()
     }
 
@@ -58,9 +76,10 @@ class PokedexVistaModelo : ViewModel() {
     }
 
     private fun cargarPokemones() {
-        viewModelScope.launch(Dispatchers.IO) {
+        val limitParam = if (limite < 0) "-1" else limite.toString()
+        cargaJob = viewModelScope.launch(Dispatchers.IO) {
             try {
-                val listaJson = URL("https://pokeapi.co/api/v2/pokemon?limit=-1").readText()
+                val listaJson = URL("https://pokeapi.co/api/v2/pokemon?limit=$limitParam").readText()
                 val resultados = JSONObject(listaJson).getJSONArray("results")
                 for (i in 0 until resultados.length()) {
                     val r = resultados.getJSONObject(i)

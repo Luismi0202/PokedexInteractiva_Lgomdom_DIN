@@ -11,6 +11,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -18,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.AlertDialog
@@ -28,6 +30,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -66,27 +69,50 @@ fun PokedexPantalla(modifier: Modifier = Modifier) {
     val pokemones = viewModel.pokemones
     var abierto by rememberSaveable { mutableStateOf(false) }
 
-    // Estado del diálogo
+    // Diálogo de detalle
     var selectedPokemon by remember { mutableStateOf<PokemonUi?>(null) }
 
+    // Diálogo de filtro por generación
+    var abrirFiltro by remember { mutableStateOf(false) }
+    val opcionesGen = listOf(
+        "Todas" to -1,
+        "Gen 1 (1–151)" to 151,
+        "Gen 2 (1–251)" to 251,
+        "Gen 3 (1–386)" to 386,
+        "Gen 4 (1–493)" to 493,
+        "Gen 5 (1–649)" to 649,
+        "Gen 6 (1–721)" to 721,
+        "Gen 7 (1–809)" to 809,
+        "Gen 8 (1–905)" to 905,
+        "Gen 9 (1–1025)" to 1025
+    )
+
     Column(modifier = modifier) {
-        OutlinedTextField(
-            value = vistaSeleccionada,
-            onValueChange = { },
-            readOnly = true,
-            label = { Text("Selección de vistas") },
-            trailingIcon = {
-                IconButton(onClick = { abierto = !abierto }) {
-                    Icon(
-                        imageVector = if (abierto) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                        contentDescription = null
-                    )
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { abierto = !abierto }
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = vistaSeleccionada,
+                onValueChange = { },
+                readOnly = true,
+                label = { Text("Selección de vistas") },
+                trailingIcon = {
+                    IconButton(onClick = { abierto = !abierto }) {
+                        Icon(
+                            imageVector = if (abierto) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            contentDescription = null
+                        )
+                    }
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { abierto = !abierto }
+            )
+            IconButton(onClick = { abrirFiltro = true }) {
+                Icon(
+                    imageVector = Icons.Default.FilterList,
+                    contentDescription = "Filtrar por generación"
+                )
+            }
+        }
 
         DropdownMenu(
             expanded = abierto,
@@ -121,6 +147,21 @@ fun PokedexPantalla(modifier: Modifier = Modifier) {
                 onPokemonClick = { selectedPokemon = it }
             )
         }
+    }
+
+    // Diálogo de filtro por generación
+    if (abrirFiltro) {
+        val idxInicial = opcionesGen.indexOfFirst { it.second == viewModel.limite }.let { if (it >= 0) it else 0 }
+        FiltroGenDialog(
+            opciones = opcionesGen,
+            indiceInicial = idxInicial,
+            onDismiss = { abrirFiltro = false },
+            onApply = { indice ->
+                val nuevoLimite = opcionesGen[indice].second
+                viewModel.aplicarFiltroGen(nuevoLimite)
+                abrirFiltro = false
+            }
+        )
     }
 
     // Diálogo de detalle
@@ -276,6 +317,42 @@ fun listaAgrupadaPorTipos(
             }
         }
     }
+}
+
+@Composable
+fun FiltroGenDialog(
+    opciones: List<Pair<String, Int>>,
+    indiceInicial: Int,
+    onDismiss: () -> Unit,
+    onApply: (Int) -> Unit
+) {
+    var seleccionado by remember { mutableStateOf(indiceInicial) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Filtrar por generación") },
+        text = {
+            Column {
+                opciones.forEachIndexed { index, (titulo, _) ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { seleccionado = index }
+                            .padding(vertical = 6.dp)
+                    ) {
+                        RadioButton(selected = seleccionado == index, onClick = { seleccionado = index })
+                        Text(text = titulo, modifier = Modifier.padding(start = 8.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onApply(seleccionado) }) { Text("Aplicar") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancelar") }
+        }
+    )
 }
 
 @Composable
