@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -33,26 +34,7 @@ class PokedexVistaModelo : ViewModel() {
         return null
     }
 
-    private val tiposTraduccion = mapOf(
-        "normal" to "Normal",
-        "fire" to "Fuego",
-        "water" to "Agua",
-        "electric" to "Eléctrico",
-        "grass" to "Planta",
-        "ice" to "Hielo",
-        "fighting" to "Lucha",
-        "poison" to "Veneno",
-        "ground" to "Tierra",
-        "flying" to "Volador",
-        "psychic" to "Psíquico",
-        "bug" to "Bicho",
-        "rock" to "Roca",
-        "ghost" to "Fantasma",
-        "dragon" to "Dragón",
-        "dark" to "Siniestro",
-        "steel" to "Acero",
-        "fairy" to "Hada"
-    )
+
 
     private fun traducirTipo(tipoIngles: String): String {
         return tiposTraduccion[tipoIngles.lowercase()] ?: tipoIngles.replaceFirstChar {
@@ -130,5 +112,49 @@ class PokedexVistaModelo : ViewModel() {
                 withContext(Dispatchers.Main) { cargando = false }
             }
         }
+    }
+
+    companion object{
+        val tiposTraduccion = mapOf(
+            "normal" to "Normal",
+            "fire" to "Fuego",
+            "water" to "Agua",
+            "electric" to "Eléctrico",
+            "grass" to "Planta",
+            "ice" to "Hielo",
+            "fighting" to "Lucha",
+            "poison" to "Veneno",
+            "ground" to "Tierra",
+            "flying" to "Volador",
+            "psychic" to "Psíquico",
+            "bug" to "Bicho",
+            "rock" to "Roca",
+            "ghost" to "Fantasma",
+            "dragon" to "Dragón",
+            "dark" to "Siniestro",
+            "steel" to "Acero",
+            "fairy" to "Hada"
+        )
+
+        val coloresPorTipo = mapOf(
+            "Normal" to Color(0xFFA8A878),
+            "Fuego" to Color(0xFFF08030),
+            "Agua" to Color(0xFF6890F0),
+            "Eléctrico" to Color(0xFFF8D030),
+            "Planta" to Color(0xFF78C850),
+            "Hielo" to Color(0xFF98D8D8),
+            "Lucha" to Color(0xFFC03028),
+            "Veneno" to Color(0xFFA040A0),
+            "Tierra" to Color(0xFFE0C068),
+            "Volador" to Color(0xFFA890F0),
+            "Psíquico" to Color(0xFFF85888),
+            "Bicho" to Color(0xFFA8B820),
+            "Roca" to Color(0xFFB8A038),
+            "Fantasma" to Color(0xFF705898),
+            "Dragón" to Color(0xFF7038F8),
+            "Siniestro" to Color(0xFF705848),
+            "Acero" to Color(0xFFB8B8D0),
+            "Hada" to Color(0xFFEE99AC)
+        )
     }
 }

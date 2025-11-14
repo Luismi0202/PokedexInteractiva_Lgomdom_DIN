@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -38,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.pokedexinteractiva.ui.theme.PokedexInteractivaTheme
+import kotlin.text.get
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -97,6 +99,7 @@ fun PokedexPantalla(modifier:Modifier = Modifier){
         when (vistaSeleccionada) {
             "Lista vertical" -> listaVerticalPokemones(pokemones, modifier = Modifier.weight(1f))
             "Vista en cuadrícula" -> listaVistaCuadricula(pokemones, modifier = Modifier.weight(1f))
+            "Vista agrupada por tipos" -> listaAgrupadaPorTipos(pokemones, modifier = Modifier.weight(1f))
         }
     }
 }
@@ -177,9 +180,62 @@ fun listaVistaCuadricula(pokemones: List<PokemonUi>, modifier: Modifier = Modifi
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun listaAgrupadaPorTipos(pokemones: List<PokemonUi>, modifier: Modifier = Modifier) {
+    val pokemonesPorTipo = PokedexVistaModelo.tiposTraduccion.values.associateWith { tipo ->
+        pokemones.filter { it.tipos.contains(tipo) }
+    }.filter { it.value.isNotEmpty() }
 
+    LazyColumn(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        pokemonesPorTipo.forEach { (tipo, pokemonesDelTipo) ->
+            stickyHeader {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = PokedexVistaModelo.coloresPorTipo[tipo] ?: Color.Gray
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = tipo,
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            }
+
+            items(pokemonesDelTipo.size) { index ->
+                val pokemon = pokemonesDelTipo[index]
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color.LightGray),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(text = pokemon.nombre)
+                        Text(text = "Tipos: ${pokemon.tipos.joinToString(", ")}")
+                        AsyncImage(
+                            model = pokemon.imagenUrl,
+                            contentDescription = pokemon.nombre,
+                            modifier = Modifier
+                                .size(150.dp)
+                                .padding(top = 8.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Preview(showBackground = true)
