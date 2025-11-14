@@ -102,6 +102,43 @@ fun PokedexPantalla(modifier:Modifier = Modifier){
 }
 
 
+
+
+@Composable
+fun listaVerticalPokemones(pokemones: List<PokemonUi>, modifier: Modifier = Modifier) {
+    LazyColumn(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(pokemones.size) { index ->
+            val pokemon = pokemones[index]
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.LightGray),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(text = pokemon.nombre)
+                    Text(text = "Tipos: ${pokemon.tipos.joinToString(", ")}")
+                    AsyncImage(
+                        model = pokemon.imagenUrl,
+                        contentDescription = pokemon.nombre,
+                        modifier = Modifier
+                            .size(150.dp)
+                            .padding(top = 8.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun listaVistaCuadricula(pokemones: List<PokemonUi>, modifier: Modifier = Modifier) {
     LazyVerticalGrid(
@@ -140,42 +177,10 @@ fun listaVistaCuadricula(pokemones: List<PokemonUi>, modifier: Modifier = Modifi
     }
 }
 
-
 @Composable
-fun listaVerticalPokemones(pokemones: List<PokemonUi>, modifier: Modifier = Modifier) {
-    LazyColumn(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(pokemones.size) { index ->
-            val pokemon = pokemones[index]
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color.LightGray),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(text = pokemon.nombre)
-                    Text(text = "Tipos: ${pokemon.tipos.joinToString(", ")}")
-                    AsyncImage(
-                        model = pokemon.imagenUrl,
-                        contentDescription = pokemon.nombre,
-                        modifier = Modifier
-                            .size(150.dp)
-                            .padding(top = 8.dp)
-                    )
-                }
-            }
-        }
-    }
-}
+fun listaAgrupadaPorTipos(pokemones: List<PokemonUi>, modifier: Modifier = Modifier) {
 
+}
 
 @Preview(showBackground = true)
 @Composable
