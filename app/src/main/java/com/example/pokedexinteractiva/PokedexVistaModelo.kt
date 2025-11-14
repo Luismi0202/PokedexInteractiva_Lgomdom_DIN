@@ -33,6 +33,39 @@ class PokedexVistaModelo : ViewModel() {
         return null
     }
 
+    private val tiposTraduccion = mapOf(
+        "normal" to "Normal",
+        "fire" to "Fuego",
+        "water" to "Agua",
+        "electric" to "Eléctrico",
+        "grass" to "Planta",
+        "ice" to "Hielo",
+        "fighting" to "Lucha",
+        "poison" to "Veneno",
+        "ground" to "Tierra",
+        "flying" to "Volador",
+        "psychic" to "Psíquico",
+        "bug" to "Bicho",
+        "rock" to "Roca",
+        "ghost" to "Fantasma",
+        "dragon" to "Dragón",
+        "dark" to "Siniestro",
+        "steel" to "Acero",
+        "fairy" to "Hada"
+    )
+
+    private fun traducirTipo(tipoIngles: String): String {
+        return tiposTraduccion[tipoIngles.lowercase()] ?: tipoIngles.replaceFirstChar {
+            if (it.isLowerCase()) it.titlecase() else it.toString()
+        }
+    }
+
+    private fun capitalizarNombre(nombre: String): String {
+        return nombre.replaceFirstChar {
+            if (it.isLowerCase()) it.titlecase() else it.toString()
+        }
+    }
+
     private fun cargarPokemones() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
@@ -53,7 +86,7 @@ class PokedexVistaModelo : ViewModel() {
                             for (t in 0 until ta.length()) {
                                 val typeName =
                                     ta.getJSONObject(t).getJSONObject("type").optString("name")
-                                tiposList.add(typeName)
+                                tiposList.add(traducirTipo(typeName))
                             }
                         }
 
@@ -78,7 +111,7 @@ class PokedexVistaModelo : ViewModel() {
                         }
 
                         val ui = PokemonUi(
-                            nombre = nombre,
+                            nombre = capitalizarNombre(nombre),
                             imagenUrl = imagen,
                             tipos = tiposList,
                             habilidades = habilidadesList,

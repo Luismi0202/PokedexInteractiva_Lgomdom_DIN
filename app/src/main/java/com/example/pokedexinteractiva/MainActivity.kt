@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -51,7 +52,7 @@ class MainActivity : ComponentActivity() {
 fun PokedexPantalla(modifier:Modifier = Modifier){
     val vistas = listOf("Lista vertical","Vista en cuadrícula","Vista agrupada por tipos")
     var vistaSeleccionada by rememberSaveable { mutableStateOf(vistas[0]) }
-    val viewModel = PokedexVistaModelo()
+    val viewModel = remember { PokedexVistaModelo() }
     val pokemones = viewModel.pokemones
     var abierto by rememberSaveable { mutableStateOf(false) }
 
