@@ -1,4 +1,3 @@
-// app/src/main/java/com/example/pokedexinteractiva/PokedexVistaModelo.kt
 package com.example.pokedexinteractiva
 
 import androidx.compose.runtime.getValue
@@ -20,7 +19,6 @@ class PokedexVistaModelo : ViewModel() {
     var cargando by mutableStateOf(true)
         private set
 
-    // Límite actual de la API (-1 = todas)
     var limite by mutableStateOf(-1)
         private set
 
@@ -30,7 +28,6 @@ class PokedexVistaModelo : ViewModel() {
         cargarPokemones()
     }
 
-    // Cambia el límite según la generación seleccionada y recarga
     fun aplicarFiltroGen(nuevoLimite: Int) {
         if (nuevoLimite == limite) return
         cargaJob?.cancel()
@@ -40,7 +37,6 @@ class PokedexVistaModelo : ViewModel() {
         cargarPokemones()
     }
 
-    // Obtiene flavor_text priorizando ES y luego EN, limpiando saltos y espacios
     private fun flavorText(entries: org.json.JSONArray?, preferidos: List<String> = listOf("es", "en")): String? {
         if (entries == null) return null
 
@@ -59,7 +55,6 @@ class PokedexVistaModelo : ViewModel() {
                 }
             }
         }
-        // Último recurso: primera entrada
         return limpiar(entries.optJSONObject(0)?.optString("flavor_text") ?: "")
     }
 
@@ -88,14 +83,16 @@ class PokedexVistaModelo : ViewModel() {
                         val detalle = JSONObject(URL(urlDetalle).readText())
 
                         val nombre = detalle.optString("name", r.optString("name"))
-                        val imagen =
-                            detalle.optJSONObject("sprites")?.optString("front_default", null)
+                        val imagen = detalle.optJSONObject("sprites")?.optString("front_default", null)
+
+                        // Capturar el sonido del Pokémon
+                        val soundUrl = detalle.optJSONObject("cries")?.optString("latest", null)
+                            ?: detalle.optJSONObject("cries")?.optString("legacy", null)
 
                         val tiposList = mutableListOf<String>()
                         detalle.optJSONArray("types")?.let { ta ->
                             for (t in 0 until ta.length()) {
-                                val typeName =
-                                    ta.getJSONObject(t).getJSONObject("type").optString("name")
+                                val typeName = ta.getJSONObject(t).getJSONObject("type").optString("name")
                                 tiposList.add(traducirTipo(typeName))
                             }
                         }
@@ -103,8 +100,7 @@ class PokedexVistaModelo : ViewModel() {
                         val habilidadesList = mutableListOf<String>()
                         detalle.optJSONArray("abilities")?.let { aa ->
                             for (a in 0 until aa.length()) {
-                                val abilityName =
-                                    aa.getJSONObject(a).getJSONObject("ability").optString("name")
+                                val abilityName = aa.getJSONObject(a).getJSONObject("ability").optString("name")
                                 habilidadesList.add(abilityName)
                             }
                         }
@@ -115,26 +111,24 @@ class PokedexVistaModelo : ViewModel() {
                             try {
                                 val species = JSONObject(URL(speciesUrl).readText())
                                 descripcion = flavorText(species.optJSONArray("flavor_text_entries"))
-                            } catch (_: Exception) { /* ignorar */ }
+                            } catch (_: Exception) { }
                         }
 
                         val ui = PokemonUi(
                             nombre = capitalizarNombre(nombre),
                             imagenUrl = imagen,
-                            tipos = tiposList,              // Ya traducidos
+                            tipos = tiposList,
                             habilidades = habilidadesList,
-                            descripcion = descripcion       // En ES si existe, si no EN
+                            descripcion = descripcion,
+                            soundUrl = soundUrl
                         )
 
                         withContext(Dispatchers.Main) { pokemones.add(ui) }
 
-                    } catch (_: Exception) {
-                        // ignorar este pokemon y continuar
-                    }
+                    } catch (_: Exception) { }
                 }
-            } catch (_: Exception) {
-                // error global (p. ej. sin red)
-            } finally {
+            } catch (_: Exception) { }
+            finally {
                 withContext(Dispatchers.Main) { cargando = false }
             }
         }
