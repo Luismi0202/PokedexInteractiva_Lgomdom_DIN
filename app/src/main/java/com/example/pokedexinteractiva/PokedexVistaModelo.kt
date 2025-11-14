@@ -22,19 +22,28 @@ class PokedexVistaModelo : ViewModel() {
         cargarPokemones()
     }
 
-    private fun textoInglesDe(entries: org.json.JSONArray?): String? {
+    // Obtiene flavor_text priorizando ES y luego EN, limpiando saltos y espacios
+    private fun flavorText(entries: org.json.JSONArray?, preferidos: List<String> = listOf("es", "en")): String? {
         if (entries == null) return null
-        for (i in 0 until entries.length()) {
-            val entry = entries.getJSONObject(i)
-            val lang = entry.getJSONObject("language").optString("name")
-            if (lang == "en") {
-                return entry.optString("flavor_text").replace("\n", " ").replace("\r", " ")
+
+        fun limpiar(s: String) = s
+            .replace("\n", " ")
+            .replace("\r", " ")
+            .replace("\u000c", " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+
+        for (lang in preferidos) {
+            for (i in 0 until entries.length()) {
+                val e = entries.getJSONObject(i)
+                if (e.optJSONObject("language")?.optString("name") == lang) {
+                    return limpiar(e.optString("flavor_text"))
+                }
             }
         }
-        return null
+        // Último recurso: primera entrada
+        return limpiar(entries.optJSONObject(0)?.optString("flavor_text") ?: "")
     }
-
-
 
     private fun traducirTipo(tipoIngles: String): String {
         return tiposTraduccion[tipoIngles.lowercase()] ?: tipoIngles.replaceFirstChar {
@@ -86,18 +95,16 @@ class PokedexVistaModelo : ViewModel() {
                         if (speciesUrl != null) {
                             try {
                                 val species = JSONObject(URL(speciesUrl).readText())
-                                descripcion =
-                                    textoInglesDe(species.optJSONArray("flavor_text_entries"))
-                            } catch (_: Exception) { /* ignorar */
-                            }
+                                descripcion = flavorText(species.optJSONArray("flavor_text_entries"))
+                            } catch (_: Exception) { /* ignorar */ }
                         }
 
                         val ui = PokemonUi(
                             nombre = capitalizarNombre(nombre),
                             imagenUrl = imagen,
-                            tipos = tiposList,
+                            tipos = tiposList,              // Ya traducidos
                             habilidades = habilidadesList,
-                            descripcion = descripcion
+                            descripcion = descripcion       // En ES si existe, si no EN
                         )
 
                         withContext(Dispatchers.Main) { pokemones.add(ui) }
@@ -114,7 +121,7 @@ class PokedexVistaModelo : ViewModel() {
         }
     }
 
-    companion object{
+    companion object {
         val tiposTraduccion = mapOf(
             "normal" to "Normal",
             "fire" to "Fuego",

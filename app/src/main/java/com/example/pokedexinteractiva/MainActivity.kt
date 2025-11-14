@@ -1,5 +1,8 @@
+// app/src/main/java/com/example/pokedexinteractiva/MainActivity.kt
 package com.example.pokedexinteractiva
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -17,6 +20,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -25,6 +29,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,12 +39,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.pokedexinteractiva.ui.theme.PokedexInteractivaTheme
-import kotlin.text.get
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,19 +52,22 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PokedexInteractivaTheme {
-                //TODO
+                PokedexPantalla()
             }
         }
     }
 }
 
 @Composable
-fun PokedexPantalla(modifier:Modifier = Modifier){
-    val vistas = listOf("Lista vertical","Vista en cuadrícula","Vista agrupada por tipos")
+fun PokedexPantalla(modifier: Modifier = Modifier) {
+    val vistas = listOf("Lista vertical", "Vista en cuadrícula", "Vista agrupada por tipos")
     var vistaSeleccionada by rememberSaveable { mutableStateOf(vistas[0]) }
     val viewModel = remember { PokedexVistaModelo() }
     val pokemones = viewModel.pokemones
     var abierto by rememberSaveable { mutableStateOf(false) }
+
+    // Estado del diálogo
+    var selectedPokemon by remember { mutableStateOf<PokemonUi?>(null) }
 
     Column(modifier = modifier) {
         OutlinedTextField(
@@ -83,8 +91,7 @@ fun PokedexPantalla(modifier:Modifier = Modifier){
         DropdownMenu(
             expanded = abierto,
             onDismissRequest = { abierto = false },
-            modifier = Modifier
-                .fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
         ) {
             vistas.forEach { opcion ->
                 DropdownMenuItem(
@@ -96,19 +103,41 @@ fun PokedexPantalla(modifier:Modifier = Modifier){
                 )
             }
         }
+
         when (vistaSeleccionada) {
-            "Lista vertical" -> listaVerticalPokemones(pokemones, modifier = Modifier.weight(1f))
-            "Vista en cuadrícula" -> listaVistaCuadricula(pokemones, modifier = Modifier.weight(1f))
-            "Vista agrupada por tipos" -> listaAgrupadaPorTipos(pokemones, modifier = Modifier.weight(1f))
+            "Lista vertical" -> listaVerticalPokemones(
+                pokemones,
+                modifier = Modifier.weight(1f),
+                onPokemonClick = { selectedPokemon = it }
+            )
+            "Vista en cuadrícula" -> listaVistaCuadricula(
+                pokemones,
+                modifier = Modifier.weight(1f),
+                onPokemonClick = { selectedPokemon = it }
+            )
+            "Vista agrupada por tipos" -> listaAgrupadaPorTipos(
+                pokemones,
+                modifier = Modifier.weight(1f),
+                onPokemonClick = { selectedPokemon = it }
+            )
         }
+    }
+
+    // Diálogo de detalle
+    selectedPokemon?.let { pokemon ->
+        PokemonDialog(
+            pokemon = pokemon,
+            onDismiss = { selectedPokemon = null }
+        )
     }
 }
 
-
-
-
 @Composable
-fun listaVerticalPokemones(pokemones: List<PokemonUi>, modifier: Modifier = Modifier) {
+fun listaVerticalPokemones(
+    pokemones: List<PokemonUi>,
+    modifier: Modifier = Modifier,
+    onPokemonClick: (PokemonUi) -> Unit
+) {
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -120,6 +149,7 @@ fun listaVerticalPokemones(pokemones: List<PokemonUi>, modifier: Modifier = Modi
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .clickable { onPokemonClick(pokemon) }
             ) {
                 Column(
                     modifier = Modifier
@@ -143,7 +173,11 @@ fun listaVerticalPokemones(pokemones: List<PokemonUi>, modifier: Modifier = Modi
 }
 
 @Composable
-fun listaVistaCuadricula(pokemones: List<PokemonUi>, modifier: Modifier = Modifier) {
+fun listaVistaCuadricula(
+    pokemones: List<PokemonUi>,
+    modifier: Modifier = Modifier,
+    onPokemonClick: (PokemonUi) -> Unit
+) {
     LazyVerticalGrid(
         modifier = modifier.fillMaxWidth(),
         columns = GridCells.Fixed(4),
@@ -157,6 +191,7 @@ fun listaVistaCuadricula(pokemones: List<PokemonUi>, modifier: Modifier = Modifi
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(4.dp)
+                    .clickable { onPokemonClick(pokemon) }
             ) {
                 Column(
                     modifier = Modifier
@@ -182,7 +217,11 @@ fun listaVistaCuadricula(pokemones: List<PokemonUi>, modifier: Modifier = Modifi
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun listaAgrupadaPorTipos(pokemones: List<PokemonUi>, modifier: Modifier = Modifier) {
+fun listaAgrupadaPorTipos(
+    pokemones: List<PokemonUi>,
+    modifier: Modifier = Modifier,
+    onPokemonClick: (PokemonUi) -> Unit
+) {
     val pokemonesPorTipo = PokedexVistaModelo.tiposTraduccion.values.associateWith { tipo ->
         pokemones.filter { it.tipos.contains(tipo) }
     }.filter { it.value.isNotEmpty() }
@@ -215,6 +254,7 @@ fun listaAgrupadaPorTipos(pokemones: List<PokemonUi>, modifier: Modifier = Modif
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .clickable { onPokemonClick(pokemon) }
                 ) {
                     Column(
                         modifier = Modifier
@@ -236,6 +276,45 @@ fun listaAgrupadaPorTipos(pokemones: List<PokemonUi>, modifier: Modifier = Modif
             }
         }
     }
+}
+
+@Composable
+fun PokemonDialog(pokemon: PokemonUi, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = pokemon.nombre) },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                AsyncImage(
+                    model = pokemon.imagenUrl,
+                    contentDescription = pokemon.nombre,
+                    modifier = Modifier.size(180.dp)
+                )
+                Text(
+                    text = "Tipo: ${pokemon.tipos.joinToString(", ")}",
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+                val detalle = pokemon.descripcion
+                    ?: "Habilidades: ${pokemon.habilidades.joinToString(", ")}"
+                Text(
+                    text = detalle,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Cerrar") }
+        },
+        dismissButton = {
+            TextButton(onClick = {
+                val url = "https://pokeapi.co/api/v2/pokemon/${pokemon.nombre.lowercase()}"
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+            }) {
+                Text("Ver en Pokédex")
+            }
+        }
+    )
 }
 
 @Preview(showBackground = true)
