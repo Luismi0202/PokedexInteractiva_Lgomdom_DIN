@@ -17,9 +17,11 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -34,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,14 +58,26 @@ fun PokedexScreen() {
     val vistas = listOf("Lista vertical", "Vista en cuadrícula", "Vista agrupada por tipos")
     var vistaSeleccionada by rememberSaveable { mutableStateOf(vistas[0]) }
     val viewModel: PokedexVistaModelo = viewModel()
-    val pokemones = viewModel.pokemones
 
     var abierto by rememberSaveable { mutableStateOf(false) }
     var abrirFiltro by remember { mutableStateOf(false) }
     var selectedPokemon by remember { mutableStateOf<PokemonUi?>(null) }
+    var busqueda by rememberSaveable { mutableStateOf("") }
+
+    val pokemonesFiltrados by remember {
+        derivedStateOf {
+            if (busqueda.isBlank() || vistaSeleccionada != "Vista agrupada por tipos") {
+                viewModel.pokemones
+            } else {
+                viewModel.pokemones.filter {
+                    it.nombre.contains(busqueda, ignoreCase = true)
+                }
+            }
+        }
+    }
 
     val opcionesGen = listOf(
-        "Todas" to -1,
+        "Todas" to 1302,
         "Gen 1 (1–151)" to 151,
         "Gen 2 (1–251)" to 251,
         "Gen 3 (1–386)" to 386,
@@ -80,9 +95,10 @@ fun PokedexScreen() {
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            // Selector de vistas y filtro
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = 8.dp)
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 OutlinedTextField(
                     value = vistaSeleccionada,
@@ -93,7 +109,7 @@ fun PokedexScreen() {
                         IconButton(onClick = { abierto = !abierto }) {
                             Icon(
                                 imageVector = if (abierto) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
-                                contentDescription = null
+                                contentDescription = "Selector de vistas"
                             )
                         }
                     },
@@ -125,19 +141,48 @@ fun PokedexScreen() {
                 }
             }
 
+            // Buscador solo para "Vista agrupada por tipos"
+            if (vistaSeleccionada == "Vista agrupada por tipos") {
+                OutlinedTextField(
+                    value = busqueda,
+                    onValueChange = { busqueda = it },
+                    label = { Text("Buscar Pokémon") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Filled.Search,
+                            contentDescription = "Buscar"
+                        )
+                    },
+                    trailingIcon = {
+                        if (busqueda.isNotEmpty()) {
+                            IconButton(onClick = { busqueda = "" }) {
+                                Icon(
+                                    imageVector = Icons.Filled.Clear,
+                                    contentDescription = "Limpiar búsqueda"
+                                )
+                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    singleLine = true
+                )
+            }
+
             when (vistaSeleccionada) {
                 "Lista vertical" -> ListaVerticalPokemones(
-                    pokemones = pokemones,
+                    pokemones = viewModel.pokemones,
                     modifier = Modifier.weight(1f),
                     onPokemonClick = { selectedPokemon = it }
                 )
                 "Vista en cuadrícula" -> ListaVistaCuadricula(
-                    pokemones = pokemones,
+                    pokemones = viewModel.pokemones,
                     modifier = Modifier.weight(1f),
                     onPokemonClick = { selectedPokemon = it }
                 )
                 "Vista agrupada por tipos" -> ListaAgrupadaPorTipos(
-                    pokemones = pokemones,
+                    pokemones = pokemonesFiltrados,
                     cargando = viewModel.cargando,
                     modifier = Modifier.weight(1f),
                     onPokemonClick = { selectedPokemon = it }
@@ -185,7 +230,7 @@ fun ListaVerticalPokemones(
                 colors = CardDefaults.cardColors(containerColor = Color.LightGray),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .padding(horizontal = 8.dp)
                     .clickable { onPokemonClick(pokemon) }
             ) {
                 Column(
@@ -194,20 +239,27 @@ fun ListaVerticalPokemones(
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(text = pokemon.nombre)
-                    Text(text = "Tipos: ${pokemon.tipos.joinToString(", ")}")
                     AsyncImage(
                         model = pokemon.imagenUrl,
                         contentDescription = pokemon.nombre,
-                        modifier = Modifier
-                            .size(150.dp)
-                            .padding(top = 8.dp)
+                        modifier = Modifier.size(120.dp)
+                    )
+                    Text(
+                        text = pokemon.nombre,
+                        fontSize = 18.sp,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                    Text(
+                        text = pokemon.tipos.joinToString(", "),
+                        fontSize = 14.sp,
+                        color = Color.Gray
                     )
                 }
             }
         }
     }
 }
+
 
 @Composable
 fun ListaVistaCuadricula(
@@ -228,25 +280,19 @@ fun ListaVistaCuadricula(
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.LightGray),
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(4.dp)
                     .clickable { onPokemonClick(pokemon) }
+                    .padding(4.dp)
             ) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
+                    modifier = Modifier.padding(4.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = pokemon.nombre,
-                        fontSize = 12.sp
-                    )
                     AsyncImage(
                         model = pokemon.imagenUrl,
                         contentDescription = pokemon.nombre,
                         modifier = Modifier.size(80.dp)
                     )
+                    Text(text = pokemon.nombre, fontSize = 12.sp)
                 }
             }
         }
@@ -268,8 +314,11 @@ fun ListaAgrupadaPorTipos(
             emptyList()
         } else {
             val tipos = pokemones.flatMap { it.tipos }.distinct().sorted()
-            tipos.map { tipo ->
-                tipo to pokemones.filter { it.tipos.contains(tipo) }
+            tipos.mapNotNull { tipo ->
+                val pokemonesDelTipo = pokemones.filter { it.tipos.contains(tipo) }
+                if (pokemonesDelTipo.isNotEmpty()) {
+                    tipo to pokemonesDelTipo
+                } else null
             }
         }
     }
@@ -294,42 +343,43 @@ fun ListaAgrupadaPorTipos(
                         colors = CardDefaults.cardColors(
                             containerColor = PokedexVistaModelo.coloresPorTipo[tipo] ?: Color.Gray
                         ),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp)
                     ) {
                         Text(
                             text = tipo,
-                            color = Color.White,
                             fontSize = 20.sp,
-                            modifier = Modifier.padding(16.dp)
+                            color = Color.White,
+                            modifier = Modifier.padding(8.dp)
                         )
                     }
                 }
 
                 items(
                     items = pokemonesDelTipo,
-                    key = { it.nombre }
+                    key = { "${tipo}-${it.nombre}" }
                 ) { pokemon ->
                     Card(
                         colors = CardDefaults.cardColors(containerColor = Color.LightGray),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
                             .clickable { onPokemonClick(pokemon) }
+                            .padding(horizontal = 8.dp)
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                        Row(
+                            modifier = Modifier.padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(text = pokemon.nombre)
-                            Text(text = "Tipos: ${pokemon.tipos.joinToString(", ")}")
                             AsyncImage(
                                 model = pokemon.imagenUrl,
                                 contentDescription = pokemon.nombre,
-                                modifier = Modifier
-                                    .size(150.dp)
-                                    .padding(top = 8.dp)
+                                modifier = Modifier.size(60.dp)
+                            )
+                            Text(
+                                text = pokemon.nombre,
+                                fontSize = 16.sp,
+                                modifier = Modifier.padding(start = 8.dp)
                             )
                         }
                     }
@@ -358,7 +408,6 @@ fun FiltroGenDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { seleccionado = index }
-                            .padding(vertical = 6.dp)
                     ) {
                         RadioButton(
                             selected = seleccionado == index,

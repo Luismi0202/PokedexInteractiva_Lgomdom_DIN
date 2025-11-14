@@ -19,7 +19,7 @@ class PokedexVistaModelo : ViewModel() {
     var cargando by mutableStateOf(true)
         private set
 
-    var limite by mutableStateOf(-1)
+    var limite by mutableStateOf(1302)
         private set
 
     private var cargaJob: Job? = null
@@ -71,7 +71,7 @@ class PokedexVistaModelo : ViewModel() {
     }
 
     private fun cargarPokemones() {
-        val limitParam = if (limite < 0) "-1" else limite.toString()
+        val limitParam = limite.toString()
         cargaJob = viewModelScope.launch(Dispatchers.IO) {
             try {
                 val listaJson = URL("https://pokeapi.co/api/v2/pokemon?limit=$limitParam").readText()
@@ -85,7 +85,6 @@ class PokedexVistaModelo : ViewModel() {
                         val nombre = detalle.optString("name", r.optString("name"))
                         val imagen = detalle.optJSONObject("sprites")?.optString("front_default", null)
 
-                        // Capturar el sonido del Pokémon
                         val soundUrl = detalle.optJSONObject("cries")?.optString("latest", null)
                             ?: detalle.optJSONObject("cries")?.optString("legacy", null)
 
