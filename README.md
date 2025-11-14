@@ -1,0 +1,1 @@
+# PokedexInteractiva_Lgomdom_DIN
